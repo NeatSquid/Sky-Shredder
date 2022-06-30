@@ -1,10 +1,10 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Input")] [Space] [SerializeField]
-    private InputAction _movement; // fucking gross but will do for now
+    private GameControls _controls;
 
     [Header("Settings")] [Space] [SerializeField] [Range(0f, 100f)]
     private float _controlSpeed = 10f;
@@ -21,21 +21,34 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _positionYawFactor = 4f;
     [SerializeField] private float _ctrlRollFactor = 4f;
 
+    [SerializeField] private GameObject[] _laserBeams;
+
     private void Awake()
     {
-        _movement.Enable();
+        _controls = new GameControls();
+        _controls.Enable();
+
+        _controls.Gameplay.Fire.started += _ =>
+        {
+            foreach (var beam in _laserBeams)
+                beam.SetActive(true);
+        };
+        _controls.Gameplay.Fire.canceled += _ =>
+        {
+            foreach (var beam in _laserBeams)
+                beam.SetActive(false);
+        };
     }
 
     private void OnDestroy()
     {
-        _movement.Disable();
+        _controls.Disable();
     }
 
     private void Update()
     {
-        _moveInput = _movement.ReadValue<Vector2>();
+        _moveInput = _controls.Gameplay.Movement.ReadValue<Vector2>();
 
-        print(_moveInput);
         ProcessTranslation();
         ProcessRotation();
     }
@@ -57,10 +70,7 @@ public class PlayerController : MonoBehaviour
         var tran = transform;
         var pos = tran.localPosition;
 
-        // var inRange = Mathf.Abs(pos.x) < _horizontalRange &&
-        //               Mathf.Abs(pos.y) < _verticalRange;
-
-        tran.Translate(_moveInput * (_controlSpeed * Time.deltaTime), Space.Self); // apply translation
+        tran.Translate(_moveInput * (_controlSpeed * Time.deltaTime), Space.Self);
 
         var newPos = transform.localPosition;
 
@@ -68,6 +78,5 @@ public class PlayerController : MonoBehaviour
         newPos.y = Mathf.Clamp(newPos.y, -_verticalRange, _verticalRange);
 
         tran.localPosition = new Vector3(newPos.x, newPos.y, pos.z);
-        // tran.LookAt(_center, tran.up);
     }
 }

@@ -21,23 +21,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _positionYawFactor = 4f;
     [SerializeField] private float _ctrlRollFactor = 4f;
 
-    [SerializeField] private GameObject[] _laserBeams;
+    [SerializeField] private ParticleSystem[] _laserBeams;
 
     private void Awake()
     {
         _controls = new GameControls();
         _controls.Enable();
 
+        StopBeams();
         _controls.Gameplay.Fire.started += _ =>
         {
             foreach (var beam in _laserBeams)
-                beam.SetActive(true);
+                beam.Play();
         };
-        _controls.Gameplay.Fire.canceled += _ =>
-        {
-            foreach (var beam in _laserBeams)
-                beam.SetActive(false);
-        };
+        _controls.Gameplay.Fire.canceled += _ => { StopBeams(); };
+    }
+
+    private void StopBeams()
+    {
+        foreach (var beam in _laserBeams)
+            beam.Stop();
     }
 
     private void OnDestroy()

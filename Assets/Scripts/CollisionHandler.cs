@@ -1,22 +1,39 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class CollisionHandler : MonoBehaviour
 {
-    private void OnCollisionEnter(Collision collision)
+    private PlayerController _playerController;
+    [SerializeField] private GameObject _explosion;
+    [SerializeField] private GameObject _shipModel;
+
+    private void Awake()
     {
-        print($"OnCollisionEnter says {gameObject.name} collided with {collision.gameObject.name}");
+        _playerController = GetComponent<PlayerController>();
     }
+    // private void OnCollisionEnter(Collision collision)
+    // {
+    //     print($"OnCollisionEnter says {gameObject.name} collided with {collision.gameObject.name}");
+    // }
 
     private void OnTriggerEnter(Collider other)
     {
-        print($"OnTriggerEnter says {gameObject.name} collided with {other.gameObject.name}");
-        Reload();
+        // print($"OnTriggerEnter says {gameObject.name} collided with {other.gameObject.name}");
+        _playerController.DisableControls();
+        StartCoroutine(ProcessCollision());
     }
 
 
-    private void Reload()
+    private IEnumerator ProcessCollision()
     {
-        SceneManager.LoadScene(0);
+        var e = Instantiate(_explosion, transform);
+        e.SetActive(true);
+        _shipModel.SetActive(false);
+
+        yield return new WaitForSeconds(1f);
+
+        var activeScene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(activeScene.buildIndex);
     }
 }

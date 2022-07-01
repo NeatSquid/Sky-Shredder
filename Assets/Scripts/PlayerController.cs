@@ -1,6 +1,4 @@
-using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,7 +10,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] [Range(0f, 20f)] private float _horizontalRange = 12f;
     [SerializeField] [Range(0f, 20f)] private float _verticalRange = 8f;
 
-    private Vector2 _moveInput;
+    private Vector2 _moveInputRaw;
     [SerializeField] private Transform _rotateMe;
 
     // [SerializeField] private Transform _center;
@@ -22,6 +20,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _ctrlRollFactor = 4f;
 
     [SerializeField] private ParticleSystem[] _laserBeams;
+
+    [SerializeField] private float _smoothTime = 2f;
+    private Vector2 _vel;
+    private Vector2 _moveInputSmoothed;
 
     private void Awake()
     {
@@ -45,12 +47,18 @@ public class PlayerController : MonoBehaviour
 
     private void OnDestroy()
     {
+        DisableControls();
+    }
+
+    public void DisableControls()
+    {
         _controls.Disable();
     }
 
     private void Update()
     {
-        _moveInput = _controls.Gameplay.Movement.ReadValue<Vector2>();
+        _moveInputRaw = _controls.Gameplay.Movement.ReadValue<Vector2>();
+        _moveInputSmoothed = Vector2.SmoothDamp(_moveInputSmoothed, _moveInputRaw, ref _vel, _smoothTime);
 
         ProcessTranslation();
         ProcessRotation();
@@ -60,9 +68,9 @@ public class PlayerController : MonoBehaviour
     {
         var localPosition = transform.localPosition;
 
-        var pitch = localPosition.y * -_positionPitchFactor + _moveInput.y * -_ctrlPitchFactor;
+        var pitch = localPosition.y * -_positionPitchFactor + _moveInputSmoothed.y * -_ctrlPitchFactor;
         var yaw = localPosition.x * -_positionYawFactor;
-        var roll = _moveInput.x * _ctrlRollFactor;
+        var roll = _moveInputSmoothed.x * _ctrlRollFactor;
 
         transform.localRotation = Quaternion.Euler(pitch, yaw, 0f);
         _rotateMe.localRotation = Quaternion.Euler(0f, 0f, roll);
@@ -73,7 +81,7 @@ public class PlayerController : MonoBehaviour
         var tran = transform;
         var pos = tran.localPosition;
 
-        tran.Translate(_moveInput * (_controlSpeed * Time.deltaTime), Space.Self);
+        tran.Translate(_moveInputSmoothed * (_controlSpeed * Time.deltaTime), Space.Self);
 
         var newPos = transform.localPosition;
 
